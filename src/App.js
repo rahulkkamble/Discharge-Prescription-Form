@@ -171,8 +171,6 @@ export default function App() {
     ]);
   }
 
-
-
   function removeMedication(index) {
     if (medications.length === 1) return;
     const copy = [...medications];
@@ -417,10 +415,6 @@ export default function App() {
         lastUpdated: getISOWithOffsetFromDateInput(),
         profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Patient"],
       },
-      text: {
-        status: "generated",
-        div: buildNarrative("Patient", `<p>${patient.name}, DoB: ${patient.birthDate}</p>`)
-      },
       identifier: [
         {
           type: {
@@ -447,10 +441,6 @@ export default function App() {
         lastUpdated: getISOWithOffsetFromDateInput(),
         profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Practitioner"],
       },
-      text: {
-        status: "generated",
-        div: buildNarrative("Practitioner", `<p>${practitioner.name}</p>`)
-      },
       identifier: [
         {
           type: {
@@ -470,13 +460,6 @@ export default function App() {
       resourceType: "MedicationRequest",
       id: medReqIds[idx],
       meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/MedicationRequest"] },
-      text: {
-        status: "generated",
-        div: buildNarrative(
-          "MedicationRequest",
-          `<p>MedicationRequest ${medReqIds[idx]}</p><p>medication: ${m.medicationText}</p><p>dosage: ${m.dosageText}</p>`
-        )
-      },
       status: "active",
       intent: "order",
       medicationCodeableConcept:
@@ -502,10 +485,6 @@ export default function App() {
       resourceType: "Condition",
       id: conditionId,
       meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Condition"] },
-      text: {
-        status: "generated",
-        div: buildNarrative("Condition", `<p>${condition.text}</p>`),
-      },
       clinicalStatus: {
         coding: [
           { system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: condition.clinicalStatus, display: "Active" },
