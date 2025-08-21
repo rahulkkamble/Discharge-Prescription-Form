@@ -364,10 +364,6 @@ export default function App() {
         profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/PrescriptionRecord"],
       },
       language: "en-IN",
-      text: {
-        status: "generated",
-        div: buildNarrative("Composition", `<p>status: ${composition.status}</p><p>date: ${composition.date}</p>`),
-      },
       identifier: {
         system: "https://ndhm.in/phr",
         value: uuidv4(),
@@ -375,7 +371,11 @@ export default function App() {
       status: composition.status,
       type: {
         coding: [
-          { system: "http://snomed.info/sct", code: "440545006", display: "Prescription record" },
+          {
+            system: "http://snomed.info/sct",
+            code: "440545006",
+            display: "Prescription record",
+          },
         ],
         text: "Prescription record",
       },
@@ -388,12 +388,21 @@ export default function App() {
           title: "Prescription record",
           code: {
             coding: [
-              { system: "http://snomed.info/sct", code: "440545006", display: "Prescription record" },
+              {
+                system: "http://snomed.info/sct",
+                code: "440545006",
+                display: "Prescription record",
+              },
             ],
           },
           entry: [
-            ...medReqIds.map((id) => ({ reference: `urn:uuid:${id}`, type: "MedicationRequest" })),
-            { reference: `urn:uuid:${binaryId}`, type: "Binary" },
+            ...medReqIds.map((id) => ({
+              reference: `urn:uuid:${id}`,
+              type: "MedicationRequest",
+            })),
+            ...(attachmentBase64 && attachmentMime
+              ? [{ reference: `urn:uuid:${binaryId}`, type: "Binary" }]
+              : []),
           ],
         },
       ],
@@ -410,7 +419,7 @@ export default function App() {
       },
       text: {
         status: "generated",
-        div: buildNarrative("Patient", `<p>${patient.name}, DoB: ${patient.birthDate}</p>`),
+        div: buildNarrative("Patient", `<p>${patient.name}, DoB: ${patient.birthDate}</p>`)
       },
       identifier: [
         {
@@ -440,7 +449,7 @@ export default function App() {
       },
       text: {
         status: "generated",
-        div: buildNarrative("Practitioner", `<p>name: ${practitioner.name}</p>`),
+        div: buildNarrative("Practitioner", `<p>${practitioner.name}</p>`)
       },
       identifier: [
         {
@@ -463,7 +472,10 @@ export default function App() {
       meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/MedicationRequest"] },
       text: {
         status: "generated",
-        div: buildNarrative("MedicationRequest", `<p>medication: ${m.medicationText}</p>`),
+        div: buildNarrative(
+          "MedicationRequest",
+          `<p>MedicationRequest ${medReqIds[idx]}</p><p>medication: ${m.medicationText}</p><p>dosage: ${m.dosageText}</p>`
+        )
       },
       status: "active",
       intent: "order",
@@ -477,11 +489,11 @@ export default function App() {
       reasonCode: [{ coding: [{ system: "http://snomed.info/sct", code: condition.code, display: condition.text }] }],
       reasonReference: [{ reference: `urn:uuid:${conditionId}`, display: "Condition" }],
       dosageInstruction: buildDosageInstruction({
-        dosageText: m.dosageText,                 // from your form state
-        additionalInstruction: m.additionalInstruction, // from form if available
-        timing: m.timing,                         // from form if available
-        route: m.route,                           // from form if available
-        method: m.method                          // from form if available
+        dosageText: m.dosageText,
+        additionalInstruction: m.additionalInstruction,
+        timing: m.timing,
+        route: m.route,
+        method: m.method
       }),
     }));
 
@@ -506,24 +518,22 @@ export default function App() {
       subject: { reference: `urn:uuid:${patientId}`, display: "Patient" },
     };
 
-    // simple small placeholder base64s (short sample, not a full file)
-    const placeholderPDF = "JVBERi0xLjQKJeLjz9MK"; // tiny stub, fine for structure/testing
-    const placeholderJPG = "/9j/4AAQSkZJRgABAQAAAQABAAD"; // tiny stub, fine for structure/testing
-    // small placeholder signature (base64 jpeg stub). Replace with real signature if available.
+    // simple placeholder base64s
     const placeholderSignature = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAaNLDw+GnFRX...";
 
-    /* Binary */
-    const binaryResource = {
-      resourceType: "Binary",
-      id: binaryId,
-      meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Binary"] },
-      // use uploaded mime if present, otherwise default to application/pdf
-      contentType: attachmentMime || "application/pdf",
-      // use uploaded base64 if present; otherwise pick placeholder that matches mime if we know it
-      data:
-        attachmentBase64 ||
-        (attachmentMime && attachmentMime.startsWith("image/") ? placeholderJPG : placeholderPDF),
-    };
+    /* Binary — include only if user uploaded file */
+    let binaryResource = null;
+    if (attachmentBase64 && attachmentMime) {
+      binaryResource = {
+        resourceType: "Binary",
+        id: binaryId,
+        meta: {
+          profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Binary"],
+        },
+        contentType: attachmentMime,
+        data: attachmentBase64,
+      };
+    }
 
     /* Add resources in example's order */
     bundle.entry.push({ fullUrl: `urn:uuid:${compId}`, resource: compositionResource });
@@ -531,9 +541,15 @@ export default function App() {
     bundle.entry.push({ fullUrl: `urn:uuid:${practitionerId}`, resource: practitionerResource });
     medicationResources.forEach((mr) => bundle.entry.push({ fullUrl: `urn:uuid:${mr.id}`, resource: mr }));
     bundle.entry.push({ fullUrl: `urn:uuid:${conditionId}`, resource: conditionResource });
-    bundle.entry.push({ fullUrl: `urn:uuid:${binaryId}`, resource: binaryResource });
+    if (binaryResource) {
+      bundle.entry.push({ fullUrl: `urn:uuid:${binaryId}`, resource: binaryResource });
+      compositionResource.section[0].entry.push({
+        reference: `urn:uuid:${binaryId}`,
+        type: "Binary"
+      });
+    }
 
-    // Bundle-level signature (auto-generated; can be overridden later if needed)
+    // Bundle-level signature
     bundle.signature = {
       type: [
         {
@@ -542,18 +558,19 @@ export default function App() {
           display: "Author's Signature"
         }
       ],
-      when: getISOWithOffsetFromDateInput(), // Timestamp with offset
+      when: getISOWithOffsetFromDateInput(),
       who: {
-        reference: `urn:uuid:${practitionerId}`, // Link to Practitioner entry
+        reference: `urn:uuid:${practitionerId}`,
         display: practitioner.name || "Practitioner"
       },
       sigFormat: "image/jpeg",
-      data: placeholderSignature // system-generated placeholder for now
+      data: placeholderSignature
     };
 
     setGenerated(bundle);
     return bundle;
   };
+
 
   // Actions
   const handleGenerate = (e) => {
