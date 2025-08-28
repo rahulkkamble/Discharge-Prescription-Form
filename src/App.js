@@ -219,16 +219,6 @@ export default function App() {
     return new Date(dateInput).toISOString().split("T")[0];
   }
 
-  /* Build XHTML narrative block with namespace + styled elements */
-  const buildNarrative = (title, contentHtml) => {
-    return `<div xmlns="http://www.w3.org/1999/xhtml" lang="en-IN" xml:lang="en-IN">
-      <p class="res-header-id"><b>Generated Narrative: ${title}</b></p>
-      <div style="display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px;">
-        ${contentHtml}
-      </div>
-    </div>`;
-  };
-
   // Build dosageInstruction dynamically and robustly.
   // Accepts either strings (from your selects) or objects {code,display}.
   // Returns an array (dosageInstruction must be an array).
@@ -603,7 +593,7 @@ export default function App() {
   // Helper for patient selection
   const handlePatientSelect = (id) => {
     setSelectedPatientId(id);
-    const found = patientList.find((p) => p.user_ref_id === id);
+    const found = patientList.find((p) => p.user_id === id);
     if (found) {
       setPatient({
         name: found.name,
@@ -657,7 +647,7 @@ export default function App() {
               >
                 <option value="">-- Select a patient --</option>
                 {patientList.map((p) => (
-                  <option key={p.user_ref_id} value={p.user_ref_id}>
+                  <option key={p.user_id} value={p.user_id}>
                     {p.name} ({p.mobile})
                   </option>
                 ))}
