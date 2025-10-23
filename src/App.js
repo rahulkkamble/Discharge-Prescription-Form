@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 /*
   Prescription Record — Builder (ABDM/FHIR document bundle)
   - Patient: API first via /api/v5/patients (+ optional Authorization), fallback to /patients.json with alert
-  - Practitioner: from window.GlobalPractitioner (FHIR Practitioner) or safe fallback
+  - Practitioner: from window.GlobalPractioner (FHIR Practitioner) or safe fallback
   - ABHA addresses normalized and selectable
   - Prescription items: medication name, dose, frequency, duration, quantity
   - Optional Encounter, Custodian, Attester
@@ -138,7 +138,7 @@ function normalizeAbhaAddresses(patientObj) {
 }
 
 /* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractitioner : null;
+const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
 const practitionerRefId = safeUuid(gp?.id);
 const practitionerDisplayName =
   (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
