@@ -137,20 +137,48 @@ function normalizeAbhaAddresses(patientObj) {
   return out;
 }
 
-/* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
-const practitionerRefId = safeUuid(gp?.id);
-const practitionerDisplayName =
-  (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
-  (typeof gp?.name === "string" ? gp.name : "") ||
-  "Dr. ABC";
-const practitionerLicense =
-  (Array.isArray(gp?.identifier) && gp.identifier?.[0]?.value) ||
-  gp?.license ||
-  "LIC-TEMP-0001";
+/* Resolve practitioner from global window object with safe fallbacks */
+function resolveGlobalPractitioner() {
+  const gp =
+    (typeof window !== "undefined" &&
+      (window.GlobalPractioner || window.GlobalPractitionerFHIR)) ||
+    null;
 
+  const fallback = {
+    id: `TEMP-${uuidv4()}`,
+    name: "Doctor ABC",
+    license: "ABC-0000-0000",
+  };
+
+  if (!gp) return fallback;
+
+  // If already flattened (name is a string)
+  if (typeof gp.name === "string") {
+    return {
+      id: gp.id || fallback.id,
+      name: gp.name || fallback.name,
+      license: gp.license || fallback.license,
+    };
+  }
+
+  // FHIR Practitioner shape
+  const id = gp.id || fallback.id;
+  const name =
+    (Array.isArray(gp.name) && gp.name[0] && gp.name[0].text) ||
+    fallback.name;
+  const license =
+    (Array.isArray(gp.identifier) && gp.identifier[0] && gp.identifier[0].value) ||
+    gp.license ||
+    fallback.license;
+
+  return { id, name, license };
+}
 /* ------------------------------- APP -------------------------------------- */
 export default function App() {
+  const [practitioner, setPractitioner] = useState(resolveGlobalPractitioner());
+  const practitionerRefId = practitioner.id;
+  const practitionerDisplayName = practitioner.name;
+  const practitionerLicense = practitioner.license;
   /* Patient selection */
   const [patients, setPatients] = useState([]);
   const [selectedPatientIdx, setSelectedPatientIdx] = useState(-1);
